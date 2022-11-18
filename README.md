@@ -36,7 +36,7 @@ The main purpose of reading tech books for me is absorbing useful practices, tec
 
 ### Done ✓
 
-- [✓] Create base project structure
-  - [✓] folders and files structure
-  - [✓] basic configuration settings
-  - [✓] github repo
+- [x] Create base project structure
+  - [x] folders and files structure
+  - [x] basic configuration settings
+  - [x] github repo
