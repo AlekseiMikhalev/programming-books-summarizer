@@ -7,6 +7,7 @@ authors = ["Aleksei Mikhalev <mikhalev.aleksei1@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.87.0"
+uvicorn = {extras = ["standard"], version = "^0.19.0"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
