@@ -3,7 +3,7 @@ from typing import Optional
 from users.models.data.users import UserStatus
 
 
-class SugnupReq(BaseModel):
+class SignupReq(BaseModel):
     user_id: int
     username: str
     password: str
