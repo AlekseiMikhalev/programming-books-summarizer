@@ -1,50 +1,25 @@
-from fastapi import FastAPI, status
+from fastapi import Depends, FastAPI, status, HTTPException
 from pydantic import BaseModel, HttpUrl
+from sqlalchemy.orm import Session
+
+import router
+import models
+import schemas
+from database import SessionLocal, engine
 
 
-class Book(BaseModel):
-    title: str
-    author: str
-    cover: HttpUrl
-    key_ideas: str
-    tech_stack: set
-
-    class Config:
-        schema_extra = {
-            'example': {
-                'title': 'Fluent Python',
-                'author': 'Luciano Ramalho',
-                'cover': 'https://learning.oreilly.com/library/cover/9781491946237/250w/',
-                'key_ideas': 'Write effective, idiomatic Python code by leveraging its best—and possibly most neglected—features',
-                'tech_stack': {'Python'}
-            }
-        }
-
-
-class User(BaseModel):  # TODO: move to user sub-app
-    username: str
-    full_name: str | None = None
-
-    class Config:
-        schema_extra = {
-            'example': {
-                'username': 'aleks_mikhalev',
-                'full_name': 'Aleks Mikhalev'
-            }
-        }
-
+models.Base.metadata.create_all(bind=engine)
 
 summarizer_app = FastAPI()
 
-fake_books_db = [
-    {
-        "title": "Fluent Python",
-        "author": "Some author",
-        "cover": "https://learning.oreilly.com",
-        "key_ideas": "Key points of the book",
-        "tech_stack": {'python', 'FastAPI', 'AWS'}
-    }
-]
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @summarizer_app.get('/', status_code=status.HTTP_200_OK)
@@ -56,25 +31,37 @@ async def root():
     }
 
 
-@summarizer_app.get('/books/', response_model=list[Book], status_code=status.HTTP_200_OK)
-async def books_list():
-    return fake_books_db
+@summarizer_app.post('/users/', response_model=schemas.User)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = router.get_user_by_email(db, email=user.email)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='Email already registered')
+    return router.create_user(db=db, user=user)
 
 
-@summarizer_app.get('/books/{book_id}', response_model=Book, status_code=status.HTTP_200_OK)
-async def book_item(book_id: int):
-    result = fake_books_db[book_id]
-    return result
+@summarizer_app.get('/users/', response_model=list[schemas.User])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = router.get_users(db, skip=skip, limit=limit)
+    return users
 
 
-@summarizer_app.post('/books/', status_code=status.HTTP_201_CREATED)
-async def create_book(book: Book, user: User):
-    return book, user
+@summarizer_app.get('/users/{user_id}', response_model=schemas.User)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = router.get_user(db, user_id=user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db_user
 
 
-@summarizer_app.put('/books/{book_id}')
-async def update_book(book_id: int, book: Book, user: User):
-    return {
-        'book_id': book_id, **book.dict(),
-        'user': user
-    }
+@summarizer_app.post('/users/{user_id}/books/', response_model=schemas.Book)
+def create_book_for_user(
+    user_id: int, book: schemas.BookCreate, db: Session = Depends(get_db)
+):
+    return router.create_book(db=db, book=book, user_id=user_id)
+
+
+@summarizer_app.get('/books/', response_model=list[schemas.Book])
+def read_books(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    books = router.get_books(db, skip=skip, limit=limit)
+    return books
