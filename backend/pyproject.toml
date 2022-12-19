@@ -10,7 +10,11 @@ fastapi = "^0.87.0"
 uvicorn = {extras = ["standard"], version = "^0.19.0"}
 httpx = "^0.23.1"
 loguru = "^0.6.0"
-SQLAlchemy = "^1.4.44"
+SQLAlchemy = "^1.4.41"
+python-jose = "^3.3.0"
+passlib = "^1.7.4"
+pydantic = {extras = ["email"], version = "^1.10.2"}
+python-multipart = "^0.0.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
